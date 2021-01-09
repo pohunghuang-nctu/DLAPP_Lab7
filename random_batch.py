@@ -22,6 +22,7 @@ import torch
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 import random
+import sys
 
 class stochastic_mini_batch(Dataset):
     
@@ -36,8 +37,8 @@ class stochastic_mini_batch(Dataset):
     
     def __candidates__(self, speaker_id):
         if speaker_id not in self.candidates:
-            self.candidates[speaker] = self.libri[self.libri['speaker_id'] == speaker_id]
-        return self.candidates[speaker]
+            self.candidates[speaker_id] = self.libri[self.libri['speaker_id'] == speaker_id]
+        return self.candidates[speaker_id]
     
     def __pickone__(self, dataframe):
         return dataframe.iloc[random.randrange(len(dataframe))]
@@ -49,37 +50,45 @@ class stochastic_mini_batch(Dataset):
             if same_as:
                 can_df = self.__candidates__(anchor.speaker_id)
                 while True:
-                    candidate = self.__pickone__(cand_df)
+                    candidate = self.__pickone__(can_df)
                     if candidate.filename != anchor.filename:
                         return candidate
             else:
                 while True:
-                    n_spkr = self.speaker_list[random.randrange(len(self.speaker_list)]
+                    n_spkr = self.speaker_list[random.randrange(len(self.speaker_list))]
                     if n_spkr != anchor.speaker_id:
                         break
                 can_df = self.__candidates__(n_spkr)
-                return self.__pickone__(cand_df)
+                return self.__pickone__(can_df)
     
     def __getitem__(self, index):
         anchor = self.__random_sample__()
         positive = self.__random_sample__(anchor)
         negative = self.__random_sample__(anchor, same_as=False)
         triplet = [anchor, positive, negative]
-        for r in triplet
+        data_list = []
+        for r in triplet:
             data = np.load(r.filename)
             clipped = clipped_audio(data)
+            # print(clipped.shape)
+            # sys.exit(0)
+            data_tensor = transforms.ToTensor().__call__(clipped)
+            # print(data_tensor.shape)
+            data_list.append(data_tensor)
          # hint 
         # 1. sample anchor file ,positive file, negative file
         # 2. np.load(...)
         # 3. clipped_audio(...)
         # 4. torch.from_numpy(....transpose ((2, 0, 1)))
         
-        return 
+        return data_list[0], data_list[1], data_list[2], anchor.speaker_id, positive.speaker_id, negative.speaker_id
         # return anchor_file, positive_file, negative_file, anchor_label, positive_label, negative_label
 
 
 
 def clipped_audio(x, num_frames=c.NUM_FRAMES):
+    # print(x.shape)
+    # sys.exit(0)
     if x.shape[0] > num_frames:
         bias = np.random.randint(0, x.shape[0] - num_frames)
         clipped_x = x[bias: num_frames + bias]
