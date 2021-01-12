@@ -70,13 +70,14 @@ def score(database, labels, embedding):
     correct = 0
     for i in range(len(labels)):
         idx, similarity, ref_emb = database.get_most_similar(embedding[i])
-        print(type(similarity))
-        print(ref_emb.shape)
+        #print(type(similarity))
+        #print(ref_emb.shape)
         pred_label = database.get_label_by_id(idx)
+        print('label: %d predict: %d' % (labels[i], pred_label))
         if pred_label == labels[i]: # hit
             correct += 1
     accuracy = correct / len(labels)
-    print('Identification accuracy = %.3f' % accuracy)
+    print('Identification accuracy = %.2f' % (accuracy * 100))
 
 
 def eval(model, libri):
